@@ -1,0 +1,68 @@
+name: CI/CD Pipeline for Node.js App
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Run Tests
+        run: npm test
+      - name: Build Docker Image
+        run: docker build -t atulzpawar86/node-ci-cd-app:latest .
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ atulzpawar86 }}
+          password: ${{ dckr_pat_M32X4zbESUfUfu5ime36tJ0PfmA }}
+      - name: Push to dockerhub-pawaraz
+        run: docker push /node-ci-cd-app:latest
+
+  deploy-to-ec2:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into EC2 and Deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ 65.0.173.82 }}
+          username: ${{ ubuntu }}
+          key: ${{ -----BEGIN RSA PRIVATE KEY-----
+MIIEpQIBAAKCAQEAtfqjfsSboOwmXZlpVqNmbW9XNIAWdkoS104FQZTjyIoDsuL4
+1/jWGNd4Mph7gxyDWhUwXfQDyJeWBNTLSjBntces/4+YRfDg3bUXQrb1ViGtvzg/
+PTpbtM/gnPGBEo4bGZxxeIQ1kr9jYXRlxFdy4Sa9FrFWT1UuseaQgTmQDXvblatQ
+is9fASbk/nz7KBtnDsKBeVzMG6fwA4Molwiw4nkFIbYbfWVD9cxWj6D8PbcTiyLy
+ppV1DBu5MdGeZ+A7wbg4qSBxRWGWft1QsCUKyh+ajq59n36j++pk42ataq3Zk4FV
+TtZngSbu0fHW0UQNHP+kxyYgoUeftoQ8CKhcJwIDAQABAoIBAQC0s6Zn+ekj+Xr7
+VJvyKR1Lq9TnUA199n4RB+tWPPeXKd0UZCd/phtK3aMAcsOq5MRVzlaR5P1g0Y1p
+TLh0+e3x5s4Vk0w8nz1bSjhHyg+CML0r9TluniV0PTun/HQTrcKhQuS2LGpaRuvz
+WLa5KbDsfCAliYDQFCDjDLUPbM5rY5YP5UeXnFlskjfno3oGwxtcEfoF3eUOF1/h
+Hd+fQsnYBxsMFwPY0Un1ZZH3pC+vmg6wxpfzQd3npwajK26P9TxrkcrkPZhJi5aU
++QH558/f+pTF6/pEp56gjvmkMMZUxA+i1ks03GSBDktFKcJ9a8UdYZGlx57n2Y0t
+HQuuE2qRAoGBAOFt2FLmxYl83kzcpGBT5aAL9iGMBmgYEcC3Qfig5rXBUgZ5+BqE
+0kg8LjzJJLmsmhKQ7BvlxQV1H22vWp1w9RWRt2bLlZb/Nsu5T8xj8fxY2cvda/9H
+jMTg1WH7peBlLidJIcWsZOQ70ho1ok3oWKy/mo3vyQ7oAlJeS7WDfB7/AoGBAM6o
+WhhkHEWKN5crQxsd/Oz0p64KjNm8rJyJoHkREt/wlfeMzqXgaYad9fv7282LgjYl
+towA8JgWEztYSU9N/XenQ2/Yw8zZ9efSE2FcpcJR/0Z6h50VbbjiX7ut4Z9ZESOp
+v6LZvhAofVHhdXxNIctmJxuuseIbbNUyIgNc4+rZAoGBAMWJT8o1VlvIA7QulAuk
++M5qLN/wp5yHmubYrwKDXCdgo9PxBSuXv/x0X7/8MiZRzSD/xSYdDaxemY+v3SOh
+W+HuslttgkOyl/2lAPwFiIKsCQ3PlVc5B21t5w3ZSd18TBk4yFNDYZVtpgo5fWPv
+eeTGcVR3DiP1wjMTVhxUf2tZAoGAI8FXDT9M8O8wHRScILX4i9rspB0pL4cIanEZ
+dbjxhhNvLwyKuIJyX5s28ykpZ4/KsKmnwuNqvTWckDj/PhxlTW2AKnrbrbbMaBad
+ycuo1k0vmLccfZ42hLWOEL/N+K8FWyFEid2Yl90ZibAzjpUd0r5S5+Q63L8X/m8V
+GXXZ7UkCgYEAlQhhJsB8NQeO+jffksLv2J/rxEXbwYvcX1wDWs0IQE4ODPfJRvWn
+DA+WBPiG4M6qKAtdMbzNa0S3HVI70AIHsUeYoVhas59wVzbxI8QfehUK0lobvwGR
+I1yTL/q9EkTyR55KAsjopgWy9lSdkh5oVw9s//6z6Jqnc2c/XpWcNVM=
+-----END RSA PRIVATE KEY----- }}
+          script: |
+            docker pull atulzpawar86/node-ci-cd-app:latest
+            docker stop node-app || true
+            docker rm node-app || true
+            docker run -d -p 3000:3000 --name node-app your-dockerhub-username/node-ci-cd-app:latest
